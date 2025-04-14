@@ -1,0 +1,82 @@
+{
+  "Random Data Generation Large": {
+    "arm64": {
+      "real": 19.435
+    },
+    "amd64": {
+      "real": 20.214
+    }
+  },
+  "Random Data Generation": {
+    "arm64": {
+      "real": 2.406
+    },
+    "amd64": {
+      "real": 1.798
+    }
+  },
+  "Gzip Compression": {
+    "arm64": {
+      "real": 19.733
+    },
+    "amd64": {
+      "real": 24.129
+    }
+  },
+  "Bzip2 Compression": {
+    "arm64": {
+      "real": 78.722
+    },
+    "amd64": {
+      "real": 88.619
+    }
+  },
+  "XZ Compression": {
+    "arm64": {
+      "real": 79.416
+    },
+    "amd64": {
+      "real": 92.888
+    }
+  },
+  "Mathematical Operations": {
+    "arm64": {
+      "real": 0.212
+    },
+    "amd64": {
+      "real": 0.398
+    }
+  },
+  "Matrix Multiplication": {
+    "arm64": {
+      "real": 7.703
+    },
+    "amd64": {
+      "real": 15.724
+    }
+  },
+  "File System Operations": {
+    "arm64": {
+      "real": 0.444
+    },
+    "amd64": {
+      "real": 20.212
+    }
+  },
+  "Process Creation": {
+    "arm64": {
+      "real": 0.005
+    },
+    "amd64": {
+      "real": 0.058
+    }
+  },
+  "Network Operations": {
+    "arm64": {
+      "real": 0.043
+    },
+    "amd64": {
+      "real": 1.873
+    }
+  }
+}
