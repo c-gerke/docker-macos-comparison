@@ -1,13 +1,13 @@
 === Performance Comparison Summary ===
 Benchmark | ARM64 | AMD64 | % Difference
 ---------|-------|-------|-------------
-Random Data Generation Large | 19.435 | 20.214 | 4.008232570105477%
-Random Data Generation | 2.406 | 1.798 | -25.270157938487117%
-Gzip Compression | 19.733 | 24.129 | 22.277403334515796%
-Bzip2 Compression | 78.722 | 88.619 | 12.572089123751937%
-XZ Compression | 79.416 | 92.888 | 16.963836002820614%
-Mathematical Operations | 0.212 | 0.398 | 87.7358490566038%
-Matrix Multiplication | 7.703 | 15.724 | 104.12826171621447%
-File System Operations | 0.444 | 20.212 | 4452.252252252252%
-Process Creation | 0.005 | 0.058 | 1060%
-Network Operations | 0.043 | 1.873 | 4255.813953488372%
+Random Data Generation Large | 18.025 | 16.419 | -8.909847434119271%
+Random Data Generation | 1.830 | 1.790 | -2.185792349726782%
+Gzip Compression | 22.161 | 24.637 | 11.172781011687192%
+Bzip2 Compression | 78.473 | 90.605 | 15.46009455481503%
+XZ Compression | 90.997 | 107.763 | 18.424783234612136%
+Mathematical Operations | 0.197 | 0.413 | 109.64467005076139%
+Matrix Multiplication | 6.995 | 15.030 | 114.86776268763404%
+File System Operations | 0.394 | 17.933 | 4451.522842639593%
+Process Creation | 0.006 | 0.072 | 1099.9999999999998%
+Network Operations | 0.046 | 1.650 | 3486.9565217391305%

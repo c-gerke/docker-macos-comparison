@@ -1,82 +1,82 @@
 {
   "Random Data Generation Large": {
     "arm64": {
-      "real": 19.435
+      "real": 18.025
     },
     "amd64": {
-      "real": 20.214
+      "real": 16.419
     }
   },
   "Random Data Generation": {
     "arm64": {
-      "real": 2.406
+      "real": 1.830
     },
     "amd64": {
-      "real": 1.798
+      "real": 1.790
     }
   },
   "Gzip Compression": {
     "arm64": {
-      "real": 19.733
+      "real": 22.161
     },
     "amd64": {
-      "real": 24.129
+      "real": 24.637
     }
   },
   "Bzip2 Compression": {
     "arm64": {
-      "real": 78.722
+      "real": 78.473
     },
     "amd64": {
-      "real": 88.619
+      "real": 90.605
     }
   },
   "XZ Compression": {
     "arm64": {
-      "real": 79.416
+      "real": 90.997
     },
     "amd64": {
-      "real": 92.888
+      "real": 107.763
     }
   },
   "Mathematical Operations": {
     "arm64": {
-      "real": 0.212
+      "real": 0.197
     },
     "amd64": {
-      "real": 0.398
+      "real": 0.413
     }
   },
   "Matrix Multiplication": {
     "arm64": {
-      "real": 7.703
+      "real": 6.995
     },
     "amd64": {
-      "real": 15.724
+      "real": 15.030
     }
   },
   "File System Operations": {
     "arm64": {
-      "real": 0.444
+      "real": 0.394
     },
     "amd64": {
-      "real": 20.212
+      "real": 17.933
     }
   },
   "Process Creation": {
     "arm64": {
-      "real": 0.005
+      "real": 0.006
     },
     "amd64": {
-      "real": 0.058
+      "real": 0.072
     }
   },
   "Network Operations": {
     "arm64": {
-      "real": 0.043
+      "real": 0.046
     },
     "amd64": {
-      "real": 1.873
+      "real": 1.650
     }
   }
 }
