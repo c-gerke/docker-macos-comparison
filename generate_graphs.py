@@ -87,14 +87,19 @@ def create_bar_chart(data, title, filename, benchmarks_filter=None):
         autolabel(rects1, arm_errors)
         autolabel(rects2, amd_errors)
         
+        # Calculate dynamic offset based on the chart's y-axis scale
+        max_value = max(max(arm_times), max(amd_times))
+        label_offset = max_value * 0.08  # 8% of max value for spacing
+        
         # Calculate and display performance differences
         for i, benchmark in enumerate(benchmarks):
             slowdown = amd_times[i] / arm_times[i]
             percentage = (slowdown - 1) * 100
-            ax.text(i, max(arm_times[i], amd_times[i]) + max(arm_errors[i], amd_errors[i]) + 0.5,
+            y_position = max(arm_times[i], amd_times[i]) + max(arm_errors[i], amd_errors[i]) + label_offset
+            ax.text(i, y_position,
                    f'{slowdown:.2f}x\n({percentage:+.1f}%)',
-                   ha='center', va='bottom', fontsize=9, fontweight='bold',
-                   bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.5))
+                   ha='center', va='bottom', fontsize=8, fontweight='bold',
+                   bbox=dict(boxstyle='round,pad=0.25', facecolor='yellow', alpha=0.6))
         
         ax.set_ylabel('Time (seconds)', fontsize=12, fontweight='bold')
         ax.set_xlabel('Benchmark', fontsize=12, fontweight='bold')
@@ -103,6 +108,10 @@ def create_bar_chart(data, title, filename, benchmarks_filter=None):
         ax.set_xticklabels(benchmarks, rotation=45, ha='right', fontsize=10)
         ax.legend(fontsize=11, loc='upper left')
         ax.grid(axis='y', alpha=0.3, linestyle='--')
+        
+        # Add some padding at the top for labels
+        y_max = ax.get_ylim()[1]
+        ax.set_ylim(top=y_max * 1.15)
         
         fig.tight_layout()
         
