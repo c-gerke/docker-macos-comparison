@@ -38,16 +38,15 @@ run_benchmark() {
     ' > "output/results_${tag}.json"
     
     # Merge platform results into main results.json
-    jq -s --arg plat "$tag" '
-        reduce .[1] as $new (.[0]; 
-            . * ($new | to_entries | map({
-                key: .key,
-                value: {($plat): .value[($plat)]}
-            }) | from_entries | 
-            with_entries(.value = (.[0][.key] // {}) + .value))
-        )
-    ' output/results.json "output/results_${tag}.json" > output/temp.json
-    mv output/temp.json output/results.json
+    if [ -s output/results.json ] && [ "$(cat output/results.json)" != "{}" ]; then
+        # Merge with existing results - deep merge the nested objects
+        jq -s 'reduce (.[1] | to_entries[]) as $item (.[0]; .[$item.key] = ((.[$item.key] // {}) + $item.value))' \
+            output/results.json "output/results_${tag}.json" > output/temp.json
+        mv output/temp.json output/results.json
+    else
+        # First platform, just copy the results
+        cp "output/results_${tag}.json" output/results.json
+    fi
     
     echo "----------------------------------------"
 }

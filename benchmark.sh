@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Number of iterations for each benchmark
-ITERATIONS=3
+ITERATIONS=1
 
 # Print system information
 echo "=== System Information ==="
