@@ -2,6 +2,8 @@
 
 This project provides a benchmarking tool to measure Docker Desktop performance on macOS, specifically comparing native ARM64 and AMD64 (via Rosetta 2) execution.
 
+The outputs in this repo are from running on a Nov 2023 MacBook Pro, with an M3 Pro CPU and 18GB of memory, on macOS 26.0.1.
+
 ## Prerequisites
 
 - Docker Desktop for Mac
