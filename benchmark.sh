@@ -204,23 +204,44 @@ run_benchmark_iterations "Binary Execution" \
 # Output results in JSON format
 echo "=== RESULTS_JSON_START ==="
 echo "{"
-first=true
+
+# Collect all benchmark names first
+benchmark_names=()
 for key in "${!results[@]}"; do
     IFS=',' read -r name metric <<< "$key"
     if [ "$metric" == "avg" ]; then
-        if [ "$first" = true ]; then
-            first=false
-        else
-            echo ","
-        fi
-        echo -n "  \"$name\": {"
-        echo -n "\"avg\": ${results["$name,avg"]}, "
-        echo -n "\"min\": ${results["$name,min"]}, "
-        echo -n "\"max\": ${results["$name,max"]}, "
-        echo -n "\"stddev\": ${results["$name,stddev"]}"
-        echo -n "}"
+        benchmark_names+=("$name")
     fi
-done | sort
+done
+
+# Sort benchmark names
+IFS=$'\n' sorted_names=($(sort <<<"${benchmark_names[*]}"))
+unset IFS
+
+# Output JSON for each benchmark
+first=true
+for name in "${sorted_names[@]}"; do
+    if [ "$first" = true ]; then
+        first=false
+    else
+        echo ","
+    fi
+    
+    # Ensure numbers have leading zeros for valid JSON
+    avg="${results["$name,avg"]}"
+    min="${results["$name,min"]}"
+    max="${results["$name,max"]}"
+    stddev="${results["$name,stddev"]}"
+    
+    # Add leading zero if number starts with decimal point
+    [[ "$avg" =~ ^\. ]] && avg="0$avg"
+    [[ "$min" =~ ^\. ]] && min="0$min"
+    [[ "$max" =~ ^\. ]] && max="0$max"
+    [[ "$stddev" =~ ^\. ]] && stddev="0$stddev"
+    
+    echo -n "  \"$name\": {\"avg\": $avg, \"min\": $min, \"max\": $max, \"stddev\": $stddev}"
+done
+
 echo ""
 echo "}"
 echo "=== RESULTS_JSON_END ==="
