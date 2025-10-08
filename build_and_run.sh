@@ -64,13 +64,13 @@ docker buildx rm
 
 # Generate a summary report
 echo "=== Performance Comparison Summary ===" > output/summary.txt
-echo "Benchmark | ARM64 (avg±σ) | AMD64 (avg±σ) | Slowdown" >> output/summary.txt
-echo "----------|---------------|---------------|----------" >> output/summary.txt
+echo "Benchmark | ARM64 (avg+/-sd) | AMD64 (avg+/-sd) | Slowdown" >> output/summary.txt
+echo "----------|------------------|------------------|----------" >> output/summary.txt
 
 jq -r 'to_entries | .[] | 
     [.key, 
-     ((.value.arm64.avg | tostring) + "±" + (.value.arm64.stddev | tostring)), 
-     ((.value.amd64.avg | tostring) + "±" + (.value.amd64.stddev | tostring)), 
+     ((.value.arm64.avg | tostring) + "+/-" + (.value.arm64.stddev | tostring)), 
+     ((.value.amd64.avg | tostring) + "+/-" + (.value.amd64.stddev | tostring)), 
      ((.value.amd64.avg / .value.arm64.avg) | tostring + "x")] | 
      join(" | ")' output/results.json >> output/summary.txt
 
