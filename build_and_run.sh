@@ -6,20 +6,6 @@ mkdir -p output
 # Initialize results JSON
 echo '{}' > output/results.json
 
-# Function to convert time format to seconds
-convert_to_seconds() {
-    local time_str=$1
-    if [[ $time_str =~ ([0-9]+)m([0-9]+\.[0-9]+)s ]]; then
-        local minutes="${BASH_REMATCH[1]}"
-        local seconds="${BASH_REMATCH[2]}"
-        echo "$minutes * 60 + $seconds" | bc
-    elif [[ $time_str =~ ([0-9]+\.[0-9]+)s ]]; then
-        echo "${BASH_REMATCH[1]}"
-    else
-        echo "0"
-    fi
-}
-
 # Function to run benchmark for a specific platform
 run_benchmark() {
     local platform=$1
@@ -35,23 +21,33 @@ run_benchmark() {
     local output
     output=$(docker run --platform $platform docker-benchmark:$tag | tee /dev/tty)
     
-    # Parse results and add to JSON
-    while IFS= read -r line; do
-        if [[ $line == "=== "* && $line != "=== System Information ===" ]]; then
-            current_benchmark=$(echo "$line" | sed 's/=== \(.*\) ===/\1/')
-        elif [[ $line == "Real time: "* ]]; then
-            real_time=$(echo "$line" | cut -d' ' -f3)
-            real_seconds=$(convert_to_seconds "$real_time")
-            
-            # Update JSON with jq
-            jq --arg bench "$current_benchmark" \
-               --arg plat "$tag" \
-               --argjson time "$real_seconds" \
-               '.[$bench] = (.[$bench] // {}) | .[$bench][$plat] = {"real": $time}' \
-               output/results.json > output/temp.json
-            mv output/temp.json output/results.json
-        fi
-    done <<< "$output"
+    # Extract JSON from output
+    local json_data=$(echo "$output" | sed -n '/=== RESULTS_JSON_START ===/,/=== RESULTS_JSON_END ===/p' | sed '1d;$d')
+    
+    if [ -z "$json_data" ]; then
+        echo "Warning: No JSON results found in output for $platform"
+        return
+    fi
+    
+    # Merge the JSON data into results.json
+    echo "$json_data" | jq --arg plat "$tag" '
+        to_entries | map({
+            key: .key,
+            value: {($plat): .value}
+        }) | from_entries
+    ' > "output/results_${tag}.json"
+    
+    # Merge platform results into main results.json
+    jq -s --arg plat "$tag" '
+        reduce .[1] as $new (.[0]; 
+            . * ($new | to_entries | map({
+                key: .key,
+                value: {($plat): .value[($plat)]}
+            }) | from_entries | 
+            with_entries(.value = (.[0][.key] // {}) + .value))
+        )
+    ' output/results.json "output/results_${tag}.json" > output/temp.json
+    mv output/temp.json output/results.json
     
     echo "----------------------------------------"
 }
@@ -68,14 +64,14 @@ docker buildx rm
 
 # Generate a summary report
 echo "=== Performance Comparison Summary ===" > output/summary.txt
-echo "Benchmark | ARM64 | AMD64 | % Difference" >> output/summary.txt
-echo "---------|-------|-------|-------------" >> output/summary.txt
+echo "Benchmark | ARM64 (avg±σ) | AMD64 (avg±σ) | Slowdown" >> output/summary.txt
+echo "----------|---------------|---------------|----------" >> output/summary.txt
 
 jq -r 'to_entries | .[] | 
     [.key, 
-     (.value.arm64.real | tostring), 
-     (.value.amd64.real | tostring), 
-     ((.value.amd64.real / .value.arm64.real * 100 - 100) | tostring + "%")] | 
+     ((.value.arm64.avg | tostring) + "±" + (.value.arm64.stddev | tostring)), 
+     ((.value.amd64.avg | tostring) + "±" + (.value.amd64.stddev | tostring)), 
+     ((.value.amd64.avg / .value.arm64.avg) | tostring + "x")] | 
      join(" | ")' output/results.json >> output/summary.txt
 
 # Create a Python container for graph generation
