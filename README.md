@@ -5,7 +5,7 @@ This project provides a benchmarking tool to measure Docker Desktop performance 
 ## Prerequisites
 
 - Docker Desktop for Mac
-- macOS (tested on Apple Silicon and Intel Macs)
+- macOS (using Apple Silicon)
 - Python 3 with matplotlib and numpy (for graph generation)
 - jq (for JSON processing)
 
