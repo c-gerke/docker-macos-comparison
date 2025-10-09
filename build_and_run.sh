@@ -6,18 +6,25 @@ mkdir -p output
 # Initialize results JSON
 echo '{}' > output/results.json
 
+# Function to build image for a specific platform
+build_image() {
+    local platform=$1
+    local tag=$2
+    
+    echo "=== Building image for $platform ==="
+    docker buildx build --platform $platform -t docker-benchmark:$tag --load .
+    echo "Build complete for $platform"
+    echo ""
+}
+
 # Function to run benchmark for a specific platform
 run_benchmark() {
     local platform=$1
     local tag=$2
     
-    echo "=== Building and running benchmark for $platform ==="
-    
-    # Build the image and load it into Docker
-    docker buildx build --platform $platform -t docker-benchmark:$tag --load .
+    echo "=== Running benchmark for $platform ==="
     
     # Run the benchmark and capture output while showing it
-    echo "Running benchmark for $platform..."
     local output
     output=$(docker run --platform $platform docker-benchmark:$tag | tee /dev/tty)
     
@@ -52,14 +59,30 @@ run_benchmark() {
 }
 
 # Make sure we have buildx
+echo "Creating buildx builder..."
 docker buildx create --use
 
-# Run benchmarks for both platforms
-run_benchmark "linux/arm64" "arm64"
-run_benchmark "linux/amd64" "amd64"
+# Build both images first (while buildkit is running)
+echo ""
+echo "========================================="
+echo "PHASE 1: Building Docker images"
+echo "========================================="
+build_image "linux/arm64" "arm64"
+build_image "linux/amd64" "amd64"
 
-# Cleanup
+# Stop and remove buildx builder before running benchmarks
+echo "Stopping buildx builder to prevent interference with benchmarks..."
 docker buildx rm
+echo ""
+
+# Now run benchmarks without buildkit running
+echo "========================================="
+echo "PHASE 2: Running benchmarks"
+echo "========================================="
+echo ""
+run_benchmark "linux/arm64" "arm64"
+echo ""
+run_benchmark "linux/amd64" "amd64"
 
 # Generate a summary report
 echo "=== Performance Comparison Summary ===" > output/summary.txt
