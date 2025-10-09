@@ -6,18 +6,15 @@ mkdir -p output
 # Initialize results JSON
 echo '{}' > output/results.json
 
-# Function to convert time format to seconds
-convert_to_seconds() {
-    local time_str=$1
-    if [[ $time_str =~ ([0-9]+)m([0-9]+\.[0-9]+)s ]]; then
-        local minutes="${BASH_REMATCH[1]}"
-        local seconds="${BASH_REMATCH[2]}"
-        echo "$minutes * 60 + $seconds" | bc
-    elif [[ $time_str =~ ([0-9]+\.[0-9]+)s ]]; then
-        echo "${BASH_REMATCH[1]}"
-    else
-        echo "0"
-    fi
+# Function to build image for a specific platform
+build_image() {
+    local platform=$1
+    local tag=$2
+    
+    echo "=== Building image for $platform ==="
+    docker buildx build --platform $platform -t docker-benchmark:$tag --load .
+    echo "Build complete for $platform"
+    echo ""
 }
 
 # Function to run benchmark for a specific platform
@@ -25,57 +22,78 @@ run_benchmark() {
     local platform=$1
     local tag=$2
     
-    echo "=== Building and running benchmark for $platform ==="
-    
-    # Build the image and load it into Docker
-    docker buildx build --platform $platform -t docker-benchmark:$tag --load .
+    echo "=== Running benchmark for $platform ==="
     
     # Run the benchmark and capture output while showing it
-    echo "Running benchmark for $platform..."
     local output
     output=$(docker run --platform $platform docker-benchmark:$tag | tee /dev/tty)
     
-    # Parse results and add to JSON
-    while IFS= read -r line; do
-        if [[ $line == "=== "* && $line != "=== System Information ===" ]]; then
-            current_benchmark=$(echo "$line" | sed 's/=== \(.*\) ===/\1/')
-        elif [[ $line == "Real time: "* ]]; then
-            real_time=$(echo "$line" | cut -d' ' -f3)
-            real_seconds=$(convert_to_seconds "$real_time")
-            
-            # Update JSON with jq
-            jq --arg bench "$current_benchmark" \
-               --arg plat "$tag" \
-               --argjson time "$real_seconds" \
-               '.[$bench] = (.[$bench] // {}) | .[$bench][$plat] = {"real": $time}' \
-               output/results.json > output/temp.json
-            mv output/temp.json output/results.json
-        fi
-    done <<< "$output"
+    # Extract JSON from output
+    local json_data=$(echo "$output" | sed -n '/=== RESULTS_JSON_START ===/,/=== RESULTS_JSON_END ===/p' | sed '1d;$d')
+    
+    if [ -z "$json_data" ]; then
+        echo "Warning: No JSON results found in output for $platform"
+        return
+    fi
+    
+    # Merge the JSON data into results.json
+    echo "$json_data" | jq --arg plat "$tag" '
+        to_entries | map({
+            key: .key,
+            value: {($plat): .value}
+        }) | from_entries
+    ' > "output/results_${tag}.json"
+    
+    # Merge platform results into main results.json
+    if [ -s output/results.json ] && [ "$(cat output/results.json)" != "{}" ]; then
+        # Merge with existing results - deep merge the nested objects
+        jq -s 'reduce (.[1] | to_entries[]) as $item (.[0]; .[$item.key] = ((.[$item.key] // {}) + $item.value))' \
+            output/results.json "output/results_${tag}.json" > output/temp.json
+        mv output/temp.json output/results.json
+    else
+        # First platform, just copy the results
+        cp "output/results_${tag}.json" output/results.json
+    fi
     
     echo "----------------------------------------"
 }
 
 # Make sure we have buildx
+echo "Creating buildx builder..."
 docker buildx create --use
 
-# Run benchmarks for both platforms
-run_benchmark "linux/arm64" "arm64"
-run_benchmark "linux/amd64" "amd64"
+# Build both images first (while buildkit is running)
+echo ""
+echo "========================================="
+echo "PHASE 1: Building Docker images"
+echo "========================================="
+build_image "linux/arm64" "arm64"
+build_image "linux/amd64" "amd64"
 
-# Cleanup
+# Stop and remove buildx builder before running benchmarks
+echo "Stopping buildx builder to prevent interference with benchmarks..."
 docker buildx rm
+echo ""
+
+# Now run benchmarks without buildkit running
+echo "========================================="
+echo "PHASE 2: Running benchmarks"
+echo "========================================="
+echo ""
+run_benchmark "linux/arm64" "arm64"
+echo ""
+run_benchmark "linux/amd64" "amd64"
 
 # Generate a summary report
 echo "=== Performance Comparison Summary ===" > output/summary.txt
-echo "Benchmark | ARM64 | AMD64 | % Difference" >> output/summary.txt
-echo "---------|-------|-------|-------------" >> output/summary.txt
+echo "Benchmark | ARM64 (avg+/-sd) | AMD64 (avg+/-sd) | Slowdown" >> output/summary.txt
+echo "----------|------------------|------------------|----------" >> output/summary.txt
 
 jq -r 'to_entries | .[] | 
     [.key, 
-     (.value.arm64.real | tostring), 
-     (.value.amd64.real | tostring), 
-     ((.value.amd64.real / .value.arm64.real * 100 - 100) | tostring + "%")] | 
+     ((.value.arm64.avg | tostring) + "+/-" + (.value.arm64.stddev | tostring)), 
+     ((.value.amd64.avg | tostring) + "+/-" + (.value.amd64.stddev | tostring)), 
+     ((.value.amd64.avg / .value.arm64.avg) | tostring + "x")] | 
      join(" | ")' output/results.json >> output/summary.txt
 
 # Create a Python container for graph generation
